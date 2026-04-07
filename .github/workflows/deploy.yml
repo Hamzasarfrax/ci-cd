@@ -1,5 +1,5 @@
 name: Deploy to ECS
-"on":
+'on':
   push:
     branches:
       - main
@@ -17,13 +17,13 @@ jobs:
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: fs
-          severity: "HIGH,CRITICAL"
+          severity: 'HIGH,CRITICAL'
       - name: Build Docker Image
         run: docker build -t myapp .
       - name: Configure AWS
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          role-to-assume: "arn:aws:iam::173815057438:role/CI-CD-ROLE"
+          role-to-assume: 'arn:aws:iam::173815057438:role/CI-CD-ROLE'
           aws-region: ap-south-1
       - name: Login to ECR
         run: |
