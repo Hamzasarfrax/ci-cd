@@ -9,6 +9,11 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      AWS_REGION: us-east-1
+      ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
+      ECS_CLUSTER: ${{ vars.ECS_CLUSTER }}
+      ECS_SERVICE: ${{ vars.ECS_SERVICE }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -27,15 +32,14 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: "arn:aws:iam::173815057438:role/CI-CD-ROLE"
-          aws-region: ap-south-1
+          aws-region: ${{ env.AWS_REGION }}
       - name: Login to ECR
-        run: |
-          aws ecr get-login-password --region $AWS_REGION | \
-          docker login --username AWS --password-stdin $ECR_REPOSITORY
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
       - name: Tag & Push
         run: |
-          docker tag myapp:latest $ECR_REPOSITORY:latest
-          docker push $ECR_REPOSITORY:latest
+          docker tag myapp:latest ${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:latest
+          docker push ${{ steps.login-ecr.outputs.registry }}/$ECR_REPOSITORY:latest
       - name: Deploy to ECS
         run: |
           aws ecs update-service \
