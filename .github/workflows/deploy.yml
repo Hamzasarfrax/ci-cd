@@ -23,7 +23,7 @@ jobs:
       - name: Configure AWS
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          role-to-assume: "https://github.com/Hamzasarfrax/ci-cd"
+          role-to-assume: "arn:aws:iam::173815057438:role/CI-CD-ROLE"
           aws-region: ap-south-1
       - name: Login to ECR
         run: |
