@@ -1,52 +1,38 @@
 name: Deploy to ECS
-on:
+"on":
   push:
-    branches: ["main"]
+    branches:
+      - main
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-
-      #  TEST STEP
       - name: HTML Lint Test
         run: |
           sudo apt install tidy -y
           tidy -e index.html
-
-      #  SECURITY SCAN (basic)
       - name: Scan Dockerfile
         uses: aquasecurity/trivy-action@master
         with:
-          scan-type: "fs"
+          scan-type: fs
           severity: "HIGH,CRITICAL"
-
-      #  BUILD IMAGE
       - name: Build Docker Image
         run: docker build -t myapp .
-
-      #  AWS LOGIN
       - name: Configure AWS
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          role-to-assume: https://github.com/Hamzasarfrax/ci-cd
+          role-to-assume: "https://github.com/Hamzasarfrax/ci-cd"
           aws-region: ap-south-1
-
-      #  LOGIN TO ECR
       - name: Login to ECR
         run: |
           aws ecr get-login-password --region $AWS_REGION | \
           docker login --username AWS --password-stdin $ECR_REPOSITORY
-
-      #  PUSH IMAGE
       - name: Tag & Push
         run: |
           docker tag myapp:latest $ECR_REPOSITORY:latest
           docker push $ECR_REPOSITORY:latest
-
-      #  DEPLOY ECS
       - name: Deploy to ECS
         run: |
           aws ecs update-service \
