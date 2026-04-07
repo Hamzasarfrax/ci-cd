@@ -32,7 +32,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v2
         with:
           role-to-assume: https://github.com/Hamzasarfrax/ci-cd
-        aws-region: ap-south-1
+          aws-region: ap-south-1
 
       #  LOGIN TO ECR
       - name: Login to ECR
