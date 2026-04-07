@@ -1,52 +1,84 @@
-# CICD Static Site to AWS ECS
+# CI/CD Static Site Deployment to AWS ECS
 
-This project is a simple static site deployed through GitHub Actions to Amazon ECS. The pipeline lint-checks the HTML, scans the repository and image with Trivy, builds a Docker image, pushes it to Amazon ECR, and triggers a fresh ECS deployment.
+This project demonstrates a clean CI/CD pipeline for a containerized static website using GitHub Actions, Amazon ECR, and Amazon ECS. Every push to `main` runs quality checks, builds a Docker image, pushes it to ECR, and triggers a fresh ECS deployment.
 
-## What this pipeline does
+It is designed as a practical learning project, but the structure is strong enough to present professionally in a portfolio, resume, or interview discussion.
 
-1. Checks out the repository on every push to `main`.
-2. Runs `tidy` against `index.html` as a basic quality gate.
-3. Runs a Trivy filesystem scan to catch high and critical issues before build.
-4. Assumes an AWS IAM role using GitHub OIDC instead of long-lived AWS keys.
-5. Logs in to Amazon ECR and builds the image with both `latest` and commit-SHA tags.
-6. Runs a Trivy image scan on the built image.
-7. Pushes the image to ECR and forces a new ECS deployment.
+## Architecture Overview
 
-## Required GitHub configuration
+The delivery flow is straightforward:
 
-Create these before running the workflow:
+1. GitHub Actions starts on every push to `main`.
+2. The workflow checks out the code and runs HTML validation.
+3. Trivy scans the repository for high and critical findings.
+4. Docker builds the application image.
+5. GitHub Actions assumes an AWS IAM role using OIDC.
+6. The workflow logs in to Amazon ECR and pushes the image.
+7. Amazon ECS is instructed to force a new deployment of the service.
 
-### Secrets
+## Current Workflow Capabilities
 
-- `AWS_ROLE_ARN`
+- Automated deployment on every push to `main`
+- HTML validation using `tidy`
+- Repository scanning with Trivy
+- Docker image build and push to Amazon ECR
+- Secure AWS authentication using GitHub OIDC
+- ECS service refresh using `aws ecs update-service --force-new-deployment`
 
-### Variables
+## Tech Stack
 
+- GitHub Actions
+- Docker
+- Amazon ECR
+- Amazon ECS
+- AWS IAM OIDC federation
+- Trivy
+- HTML, CSS, JavaScript
+
+## Repository Structure
+
+```text
+.
+|-- .github/
+|   `-- workflows/
+|       `-- deploy.yml
+|-- Dockerfile
+|-- index.html
+|-- style.css
+|-- script.js
+`-- README.md
+```
+
+## GitHub Actions Configuration
+
+The workflow expects the following repository secrets:
+
+- `AWS_REGION`
 - `ECR_REPOSITORY`
 - `ECS_CLUSTER`
 - `ECS_SERVICE`
 
-Use these example values:
+Example values:
 
 ```text
-AWS_ROLE_ARN=arn:aws:iam::123456789012:role/github-actions-ecs-deploy
+AWS_REGION=us-east-1
 ECR_REPOSITORY=myapp
 ECS_CLUSTER=my-ecs-cluster
 ECS_SERVICE=my-ecs-service
 ```
 
-`ECR_REPOSITORY` should be the repository name inside ECR, not the full registry URL. The workflow reads the registry URL automatically from the ECR login step.
+`ECR_REPOSITORY` should contain only the ECR repository name, such as `myapp`, not the full registry URL.
 
-## AWS side setup
+## AWS Requirements
 
-You need these resources ready in AWS:
+Before running the pipeline, make sure the following resources already exist in AWS:
 
-- An ECR repository
-- An ECS cluster
-- An ECS service already configured to pull from your ECR image
+- An Amazon ECR repository
+- An Amazon ECS cluster
+- An Amazon ECS service
 - An IAM role trusted by GitHub OIDC
 
-The IAM role should allow only what this workflow needs:
+The IAM role used by GitHub Actions should allow at least:
 
 - `ecr:GetAuthorizationToken`
 - `ecr:BatchCheckLayerAvailability`
@@ -57,37 +89,47 @@ The IAM role should allow only what this workflow needs:
 - `ecs:UpdateService`
 - `ecs:DescribeServices`
 
-## Why OIDC is better
+## Why This Project Stands Out
 
-This workflow uses `AWS_ROLE_ARN` with `aws-actions/configure-aws-credentials`. That means GitHub receives short-lived AWS credentials at runtime instead of storing permanent access keys in repository secrets.
+This project goes beyond a basic "push code and deploy" demo. It shows:
 
-This is the safer approach because:
+- Secure cloud authentication without long-lived AWS access keys
+- Automated validation and security scanning before deployment
+- Real container registry integration with ECR
+- Real service deployment behavior with ECS
+- A practical CI/CD pattern that mirrors real DevOps workflows
 
-- there are no long-lived AWS keys to rotate or leak
-- access is temporary
-- the IAM role can be tightly scoped
+For learners, it proves hands-on understanding of cloud deployment pipelines. For hiring managers, it shows applied knowledge rather than tutorial-only familiarity.
 
-## Top 1% improvements
+## Local Development
 
-If you want this project to feel more production-grade, these are the next upgrades:
-
-1. Deploy a new ECS task definition revision for each image instead of relying on `latest`.
-2. Add `Checkov` for Terraform, GitHub Actions, and Dockerfile policy scanning.
-3. Add branch protection so deployment only happens after pull request review.
-4. Add a separate pull request workflow for linting and scans before merge.
-5. Publish Trivy results to GitHub Security or keep SARIF reports as artifacts.
-6. Add image signing, SBOM generation, and dependency review.
-7. Use separate AWS accounts or environments for `dev`, `stage`, and `prod`.
-
-## Local Docker commands
+Build and run the container locally:
 
 ```powershell
 docker build -t myapp .
 docker run -d -p 8080:80 myapp
 ```
 
-Open `http://localhost:8080` to test locally.
+Then open:
 
-## Important note
+```text
+http://localhost:8080
+```
 
-The current deploy step uses `aws ecs update-service --force-new-deployment`, which works well for a learning project and for services already configured around the same repository image. For stronger production control, move to task-definition based deployments with immutable image tags only.
+## Production-Level Next Steps
+
+If you want to push this project toward a more advanced, production-style setup, these are the best upgrades:
+
+1. Tag images with both `latest` and the Git commit SHA.
+2. Deploy a new ECS task definition revision instead of relying only on `force-new-deployment`.
+3. Add a pull request workflow for validation before merge.
+4. Publish Trivy scan results as artifacts or SARIF reports.
+5. Introduce environment separation such as `dev`, `staging`, and `prod`.
+6. Add branch protection and required status checks.
+7. Add image signing, SBOM generation, and policy scanning.
+
+## Notes
+
+The current deployment strategy is intentionally simple and effective for a learning or portfolio project. It assumes the ECS service is already configured to use the ECR repository being updated by the pipeline.
+
+For stricter release control in production, the next logical step is moving to immutable image tags and task-definition based deployments.
