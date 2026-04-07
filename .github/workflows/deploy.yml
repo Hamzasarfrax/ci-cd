@@ -3,6 +3,9 @@ name: Deploy to ECS
   push:
     branches:
       - main
+  permissions: null
+  id-token: write
+  contents: read
 jobs:
   deploy:
     runs-on: ubuntu-latest
